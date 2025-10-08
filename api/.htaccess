@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Redirect requests for auth
+RewriteRule ^auth/login/?$ auth/login.php [NC,L]
+RewriteRule ^auth/change-password/?$ auth/change-password.php [NC,L]
+
+# Redirect requests for parties
+RewriteRule ^parties/list/?$ parties/list.php [NC,L]
+RewriteRule ^parties/add/?$ parties/add.php [NC,L]
+RewriteRule ^parties/update/?$ parties/update.php [NC,L]
+RewriteRule ^parties/delete/([0-9]+)/?$ parties/delete.php?id=$1 [NC,L]
+RewriteRule ^parties/vote/([0-9]+)/?$ parties/vote.php?id=$1 [NC,L]
+
+# Serve uploaded files
+RewriteRule ^uploads/(.*)$ uploads/$1 [L]
