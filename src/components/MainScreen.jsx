@@ -153,7 +153,7 @@ function MainScreen({ token, onLoginSuccess, onLogout }) {
                   className="bg-white rounded-lg shadow-lg overflow-hidden"
                 >
                   <img
-                    src={`http://localhost:3001/${party.party_banner.replace(
+                    src={`http://localhost/poll-pulse/${party.party_banner.replace(
                       /\\/g,
                       "/"
                     )}`}
@@ -162,7 +162,7 @@ function MainScreen({ token, onLoginSuccess, onLogout }) {
                   />
                   <div className="p-4 flex items-center">
                     <img
-                      src={`http://localhost:3001/${party.party_logo.replace(
+                      src={`http://localhost/poll-pulse/${party.party_logo.replace(
                         /\\/g,
                         "/"
                       )}`}

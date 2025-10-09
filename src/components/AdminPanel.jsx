@@ -122,6 +122,8 @@ function AdminPanel({ token, onLogout }) {
     if (!currentParty) return;
 
     const formData = new FormData();
+    // Add the ID to the form data
+    formData.append("id", currentParty.id);
     formData.append("party_name", editedPartyName);
     formData.append("total_votes", editedTotalVotes);
     if (editedPartyLogo) {
@@ -132,8 +134,9 @@ function AdminPanel({ token, onLogout }) {
     }
 
     try {
-      await axios.put(
-        `http://localhost/poll-pulse/api/parties/list/${currentParty.id}`,
+      // Corrected URL and Method: Use POST and remove /list/:id
+      await axios.post(
+        `http://localhost/poll-pulse/api/parties/update`,
         formData,
         {
           headers: {
@@ -146,17 +149,16 @@ function AdminPanel({ token, onLogout }) {
       closeModals();
     } catch (err) {
       console.error("Failed to update party:", err);
-      // You can add an error message inside the modal
     }
   };
-
   // --- Delete Party Logic ---
   const handleDeleteParty = async () => {
     if (!currentParty) return;
 
     try {
+      // Corrected URL: Removed "/list"
       await axios.delete(
-        `http://localhost/poll-pulse/api/parties/list/${currentParty.id}`,
+        `http://localhost/poll-pulse/api/parties/delete/${currentParty.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setParties(parties.filter((p) => p.id !== currentParty.id));
@@ -165,7 +167,6 @@ function AdminPanel({ token, onLogout }) {
       console.error("Failed to delete party:", err);
     }
   };
-
   // --- Change Password Logic ---
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -179,7 +180,7 @@ function AdminPanel({ token, onLogout }) {
 
     try {
       await axios.post(
-        "http://localhost:3001/api/auth/change-password",
+        "http://localhost/poll-pulse/api/auth/change-password",
         { currentPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -267,7 +268,7 @@ function AdminPanel({ token, onLogout }) {
                   >
                     <div className="flex items-center">
                       <img
-                        src={`http://localhost:3001/${party.party_logo.replace(
+                        src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
                           /\\/g,
                           "/"
                         )}`}

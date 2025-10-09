@@ -11,7 +11,9 @@ function HomePage() {
 
   const fetchParties = async () => {
     try {
-      const response = await axios.get("http://localhost/poll-pulse/api/parties/list");
+      const response = await axios.get(
+        "http://localhost/poll-pulse/api/parties/list"
+      );
       setParties(response.data);
     } catch (error) {
       console.error("Failed to fetch parties:", error);
@@ -30,7 +32,9 @@ function HomePage() {
     }
 
     try {
-      await axios.post(`http://localhost/poll-pulse/api/parties/list/vote/${partyId}`);
+      await axios.put(
+        `http://localhost/poll-pulse/api/parties/vote/${partyId}`
+      );
       // Set a flag in local storage to remember that the user has voted
       localStorage.setItem("hasVoted", "true");
       setHasVoted(true);
@@ -86,7 +90,7 @@ function HomePage() {
                 className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300"
               >
                 <img
-                  src={`http://localhost:3001/${party.party_banner.replace(
+                  src={`http://localhost/poll-pulse/api/${party.party_banner.replace(
                     /\\/g,
                     "/"
                   )}`}
@@ -95,7 +99,7 @@ function HomePage() {
                 />
                 <div className="p-6 pb-2 flex flex-col items-center -mt-16">
                   <img
-                    src={`http://localhost:3001/${party.party_logo.replace(
+                    src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
                       /\\/g,
                       "/"
                     )}`}

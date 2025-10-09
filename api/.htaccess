@@ -1,3 +1,4 @@
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteEngine On
 
 # Redirect requests for auth

@@ -1,5 +1,3 @@
-// client/src/components/Login.jsx
-
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
@@ -18,7 +16,7 @@ function Login({ onLoginSuccess }) {
 
     try {
       const response = await axios.post(
-        "http://localhost/poll-pulse/api/auth/login", 
+        "/api/auth/login", 
         {
           username,
           password,
