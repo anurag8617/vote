@@ -1,1 +1,54 @@
 @import "tailwindcss";
+
+
+/* --- POP-IN (entry animation) --- */
+@keyframes pop-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* --- PULSE-GLOW (continuous animation) --- */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0px #60a5fa;
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #60a5fa;
+  }
+}
+
+/* --- COMBINED ANIMATION --- */
+.animate-pop-glow {
+  animation: pop-in 0.6s ease-out forwards,
+    pulse-glow 2s ease-in-out infinite 0.6s; /* starts pulse after pop finishes */
+}
+
+
+@keyframes pop-in {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0px #60a5fa; }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px #60a5fa; }
+}
+
+.animate-pop-glow {
+  animation:
+    pop-in 0.6s ease-out forwards,
+    pulse-glow 2s ease-in-out infinite 0.6s; /* pulse starts after pop */
+}

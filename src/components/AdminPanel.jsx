@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"; // Using the correct library
 
 function AdminPanel({ token, onLogout }) {
   const navigate = useNavigate();
@@ -41,7 +42,15 @@ function AdminPanel({ token, onLogout }) {
       const response = await axios.get(
         "http://localhost/poll-pulse/api/parties/list"
       );
-      setParties(response.data);
+      // Ensure the response data is an array before setting the state
+      if (Array.isArray(response.data)) {
+        setParties(response.data);
+      } else {
+        // If the backend returned an error or unexpected data, treat it as an empty list
+        setParties([]);
+        console.error("API did not return an array:", response.data);
+        setFetchError("Failed to load party data in the correct format.");
+      }
     } catch (error) {
       console.error("Failed to fetch parties:", error);
       setFetchError("Could not load party data.");
@@ -55,6 +64,33 @@ function AdminPanel({ token, onLogout }) {
   const handleLogoutClick = () => {
     onLogout();
     navigate("/");
+  };
+
+  // --- DRAG AND DROP HANDLER ---
+  const onDragEnd = async (result) => {
+    const { destination, source } = result;
+    if (
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
+    ) {
+      return;
+    }
+    const reorderedParties = Array.from(parties);
+    const [movedParty] = reorderedParties.splice(source.index, 1);
+    reorderedParties.splice(destination.index, 0, movedParty);
+    setParties(reorderedParties);
+    try {
+      const partyIdsInOrder = reorderedParties.map((p) => p.id);
+      await axios.post(
+        "http://localhost/poll-pulse/api/parties/reorder.php",
+        { partyIds: partyIdsInOrder },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error("Failed to reorder parties:", err);
+      fetchParties(); // Revert to original order if API fails
+    }
   };
 
   // --- Add Party Form Logic ---
@@ -122,7 +158,6 @@ function AdminPanel({ token, onLogout }) {
     if (!currentParty) return;
 
     const formData = new FormData();
-    // Add the ID to the form data
     formData.append("id", currentParty.id);
     formData.append("party_name", editedPartyName);
     formData.append("total_votes", editedTotalVotes);
@@ -134,7 +169,6 @@ function AdminPanel({ token, onLogout }) {
     }
 
     try {
-      // Corrected URL and Method: Use POST and remove /list/:id
       await axios.post(
         `http://localhost/poll-pulse/api/parties/update`,
         formData,
@@ -151,12 +185,12 @@ function AdminPanel({ token, onLogout }) {
       console.error("Failed to update party:", err);
     }
   };
+
   // --- Delete Party Logic ---
   const handleDeleteParty = async () => {
     if (!currentParty) return;
 
     try {
-      // Corrected URL: Removed "/list"
       await axios.delete(
         `http://localhost/poll-pulse/api/parties/delete/${currentParty.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -167,6 +201,7 @@ function AdminPanel({ token, onLogout }) {
       console.error("Failed to delete party:", err);
     }
   };
+
   // --- Change Password Logic ---
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -253,57 +288,84 @@ function AdminPanel({ token, onLogout }) {
         {/* View Parties */}
         {activeView === "view" && (
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-3xl font-bold mb-6 text-gray-800">
-              Existing Parties
-            </h2>
-            {fetchError && (
-              <p className="text-center text-red-500">{fetchError}</p>
-            )}
-            <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
-              {parties.length > 0 ? (
-                parties.map((party) => (
-                  <div
-                    key={party.id}
-                    className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border"
-                  >
-                    <div className="flex items-center">
-                      <img
-                        src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
-                          /\\/g,
-                          "/"
-                        )}`}
-                        alt={`${party.party_name} Logo`}
-                        className="w-12 h-12 object-contain mr-4 rounded-full"
-                      />
-                      <span className="font-semibold text-gray-700">
-                        {party.party_name}
-                      </span>
-                      <span className="ml-4 text-gray-500">
-                        (Votes: {party.total_votes})
-                      </span>
-                    </div>
-                    <div className="space-x-2">
-                      <button
-                        onClick={() => openEditModal(party)}
-                        className="bg-yellow-500 text-white font-bold py-1 px-3 rounded hover:bg-yellow-600 transition"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => openDeleteModal(party)}
-                        className="bg-red-600 text-white font-bold py-1 px-3 rounded hover:bg-red-700 transition"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-500">
-                  No parties have been added yet.
-                </p>
-              )}
+            <div className="mb-6 text-center">
+              <h2 className="text-3xl font-bold text-gray-800">
+                Manage & Reorder Parties
+              </h2>
+              <p className="text-gray-500 mt-1">
+                Drag and drop the parties to change their order on the voting
+                page.
+              </p>
             </div>
+
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="parties">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="max-w-3xl mx-auto space-y-3"
+                  >
+                    {parties.map((party, index) => (
+                      <Draggable
+                        key={party.id}
+                        draggableId={String(party.id)}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className="bg-gray-50 rounded-lg shadow-md p-3 flex items-center justify-between"
+                          >
+                            <div className="flex items-center flex-grow">
+                              <span className="text-gray-400 font-bold mr-4">
+                                #{index + 1}
+                              </span>
+                              <img
+                                src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
+                                  /\\/g,
+                                  "/"
+                                )}`}
+                                alt={`${party.party_name} Logo`}
+                                className="w-12 h-12 object-contain rounded-full border-2 mr-4"
+                              />
+                              <div>
+                                <h3 className="text-lg font-bold text-gray-800">
+                                  {party.party_name}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  Votes:{" "}
+                                  <span className="font-bold text-blue-600">
+                                    {party.total_votes}
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="space-x-2">
+                              <button
+                                onClick={() => openEditModal(party)}
+                                className="bg-yellow-500 text-white font-bold py-1 px-3 rounded hover:bg-yellow-600"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(party)}
+                                className="bg-red-600 text-white font-bold py-1 px-3 rounded hover:bg-red-700"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
         )}
         {activeView === "add" && (
@@ -324,10 +386,12 @@ function AdminPanel({ token, onLogout }) {
                   id="partyName"
                   value={partyName}
                   onChange={(e) => setPartyName(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  placeholder="Enter the party's official name"
                   required
                 />
               </div>
+
               <div>
                 <label
                   htmlFor="partyLogo"
@@ -339,11 +403,11 @@ function AdminPanel({ token, onLogout }) {
                   type="file"
                   id="partyLogo"
                   onChange={(e) => setPartyLogo(e.target.files[0])}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                  accept="image/*"
+                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   required
                 />
               </div>
+
               <div>
                 <label
                   htmlFor="partyBanner"
@@ -355,40 +419,44 @@ function AdminPanel({ token, onLogout }) {
                   type="file"
                   id="partyBanner"
                   onChange={(e) => setPartyBanner(e.target.files[0])}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                  accept="image/*"
+                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   required
                 />
               </div>
+
+              {/* --- Error & Success Messages --- */}
+              {message && (
+                <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
+                  {message}
+                </div>
+              )}
+              {error && (
+                <div className="text-red-600 text-sm font-medium text-center bg-red-100 p-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition ${
-                  loading ? "opacity-50 cursor-not-allowed" : ""
+                className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 ${
+                  loading
+                    ? "bg-blue-300 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
-                {loading ? "Adding..." : "Add Party"}
+                {loading ? "Adding Party..." : "Add Party"}
               </button>
             </form>
-            {message && (
-              <p className="mt-4 text-center text-green-600 font-medium">
-                {message}
-              </p>
-            )}
-            {error && (
-              <p className="mt-4 text-center text-red-600 font-medium">
-                {error}
-              </p>
-            )}
           </div>
         )}
-        {/* Change Password View */}
         {activeView === "changePassword" && (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">
               Change Admin Password
             </h2>
             <form onSubmit={handleChangePassword} className="space-y-6">
+              {/* Change Password Form Fields */}
               <div>
                 <label
                   htmlFor="currentPassword"
@@ -401,10 +469,12 @@ function AdminPanel({ token, onLogout }) {
                   id="currentPassword"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  placeholder="Enter your current password"
                   required
                 />
               </div>
+
               <div>
                 <label
                   htmlFor="newPassword"
@@ -417,10 +487,12 @@ function AdminPanel({ token, onLogout }) {
                   id="newPassword"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  placeholder="Enter your new password"
                   required
                 />
               </div>
+
               <div>
                 <label
                   htmlFor="confirmPassword"
@@ -433,27 +505,31 @@ function AdminPanel({ token, onLogout }) {
                   id="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  placeholder="Confirm your new password"
                   required
                 />
               </div>
+
+              {/* --- Error & Success Messages --- */}
+              {passwordChangeMessage && (
+                <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
+                  {passwordChangeMessage}
+                </div>
+              )}
+              {passwordChangeError && (
+                <div className="text-red-600 text-sm font-medium text-center bg-red-100 p-3 rounded-lg">
+                  {passwordChangeError}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition"
+                className="w-full py-3 text-white font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 transition-all duration-200"
               >
                 Change Password
               </button>
             </form>
-            {passwordChangeMessage && (
-              <p className="mt-4 text-center text-green-600 font-medium">
-                {passwordChangeMessage}
-              </p>
-            )}
-            {passwordChangeError && (
-              <p className="mt-4 text-center text-red-600 font-medium">
-                {passwordChangeError}
-              </p>
-            )}
           </div>
         )}
       </main>
@@ -461,83 +537,90 @@ function AdminPanel({ token, onLogout }) {
       {/* ====== MODALS ====== */}
       {/* Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Edit Party</h3>
             <form onSubmit={handleUpdateParty} className="space-y-4">
+              {/* Edit Form Fields */}
               <div>
                 <label
-                  htmlFor="editedPartyName"
-                  className="block font-medium mb-1"
+                  htmlFor="editPartyName"
+                  className="block mb-2 font-bold text-gray-700"
                 >
                   Party Name
                 </label>
                 <input
-                  id="editedPartyName"
                   type="text"
+                  id="editPartyName"
                   value={editedPartyName}
                   onChange={(e) => setEditedPartyName(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                   required
                 />
               </div>
+
               <div>
                 <label
-                  htmlFor="editedTotalVotes"
-                  className="block font-medium mb-1"
+                  htmlFor="editTotalVotes"
+                  className="block mb-2 font-bold text-gray-700"
                 >
                   Total Votes
                 </label>
                 <input
-                  id="editedTotalVotes"
                   type="number"
+                  id="editTotalVotes"
                   value={editedTotalVotes}
-                  onChange={(e) => setEditedTotalVotes(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg"
+                  onChange={(e) =>
+                    setEditedTotalVotes(parseInt(e.target.value, 10))
+                  }
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                   required
                 />
               </div>
+
               <div>
                 <label
-                  htmlFor="editedPartyLogo"
-                  className="block font-medium mb-1"
+                  htmlFor="editPartyLogo"
+                  className="block mb-2 font-bold text-gray-700"
                 >
-                  New Party Logo (Optional)
+                  Upload New Logo (Optional)
                 </label>
                 <input
-                  id="editedPartyLogo"
                   type="file"
+                  id="editPartyLogo"
                   onChange={(e) => setEditedPartyLogo(e.target.files[0])}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
+
               <div>
                 <label
-                  htmlFor="editedPartyBanner"
-                  className="block font-medium mb-1"
+                  htmlFor="editPartyBanner"
+                  className="block mb-2 font-bold text-gray-700"
                 >
-                  New Party Banner (Optional)
+                  Upload New Banner (Optional)
                 </label>
                 <input
-                  id="editedPartyBanner"
                   type="file"
+                  id="editPartyBanner"
                   onChange={(e) => setEditedPartyBanner(e.target.files[0])}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
-              <div className="flex justify-end space-x-2 pt-4">
+
+              <div className="flex justify-end space-x-4 pt-4">
                 <button
                   type="button"
                   onClick={closeModals}
-                  className="bg-gray-300 py-2 px-4 rounded hover:bg-gray-400"
+                  className="bg-gray-300 py-2 px-6 rounded-lg hover:bg-gray-400 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+                  className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 font-semibold"
                 >
-                  Save Changes
+                  Update Party
                 </button>
               </div>
             </form>
@@ -547,8 +630,8 @@ function AdminPanel({ token, onLogout }) {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md text-center">
+        <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md text-center">
             <h3 className="text-xl font-bold mb-4">Confirm Deletion</h3>
             <p className="mb-6">
               Are you sure you want to delete the party "
