@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import image from "../assets/polling.png";
+import bg from "../assets/bg.png";
 
 function HomePage() {
   const [parties, setParties] = useState([]);
@@ -14,20 +14,15 @@ function HomePage() {
       const response = await axios.get(
         "http://localhost/poll-pulse/api/parties/list"
       );
-
-      // --- FIX: Ensure the response data is an array before setting state ---
       if (Array.isArray(response.data)) {
         setParties(response.data);
       } else {
-        // If the API returns something other than an array, log it and set an error.
-        console.error("API did not return an array:", response.data);
-        setError("Could not load party data. Invalid format received.");
-        setParties([]); // Default to an empty array to prevent the .map error
+        setError("Invalid data format from API.");
+        setParties([]);
       }
     } catch (error) {
-      console.error("Failed to fetch parties:", error);
+      console.error(error);
       setError("Could not load party data. Please try again later.");
-      setParties([]); // Also default to an empty array if the API call fails
     }
   };
 
@@ -37,7 +32,7 @@ function HomePage() {
 
   const handleVote = async (partyId) => {
     if (localStorage.getItem("hasVoted") === "true") {
-      alert("You have already cast your vote!");
+      alert("आप पहले ही वोट दे चुके हैं!");
       return;
     }
 
@@ -45,111 +40,146 @@ function HomePage() {
       await axios.put(
         `http://localhost/poll-pulse/api/parties/vote/${partyId}`
       );
-
       localStorage.setItem("hasVoted", "true");
       setHasVoted(true);
       await fetchParties();
-      alert("Thank you! Your vote has been counted.");
+      alert("धन्यवाद! आपका वोट दर्ज कर लिया गया है।");
     } catch (err) {
-      if (err.response && err.response.status === 403) {
+      if (err.response?.status === 403) {
         alert(
           err.response.data.message ||
-            "You have already voted from this device."
+            "आप पहले ही इस डिवाइस से वोट दे चुके हैं।"
         );
         localStorage.setItem("hasVoted", "true");
         setHasVoted(true);
       } else {
-        console.error("Failed to vote:", err);
-        alert(
-          "An error occurred while submitting your vote. Please try again."
-        );
+        alert("कुछ त्रुटि हुई, कृपया पुनः प्रयास करें।");
       }
     }
   };
 
   return (
-    <div className="bg-amber-50 min-h-screen font-sans">
+    <div className="bg-gradient-to-b from-blue-100 to-white min-h-screen flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-white shadow-md">
-        <nav className="container mx-auto px-6 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">PollPulse</h1>
+      <header className="bg-[#1E3A8A] text-white shadow-md sticky top-0 z-50">
+        <nav className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <h1 className="text-lg font-bold tracking-wide">🗳️ PollPulse</h1>
+          <div className="text-sm opacity-90">Voice of the People</div>
         </nav>
       </header>
-      <marquee behavior="scroll" direction="left" scrollamount="8">
-        आवाज आपकी, न्याय सबका
-      </marquee>
-      <section className="p-6 bg-amber-100">
-        <div className="container mx-auto flex flex-col md:flex-row items-center gap-8">
-          {/* TEXT */}
-          <div className="w-full md:w-1/2 text-left">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-4">
-              आवाज आपकी, न्याय सबका
-            </h2>
-          </div>
-          {/* IMAGE */}
-          <div className="w-full md:w-1/2 flex justify-center md:justify-end">
-            <img
-              src={image}
-              alt="Polling Poster"
-              className="rounded-lg w-3/4 md:w-2/3 max-w-sm"
-            />
-          </div>
+
+      {/* Marquee */}
+      <div className="bg-[#FEF3C7] text-center py-2 text-sm font-medium text-gray-800">
+        <marquee scrollamount="6">📢 आवाज आपकी, न्याय सबका</marquee>
+      </div>
+
+      {/* Title Section */}
+      <section
+        className="relative py-10 text-center bg-gradient-to-r from-[#1E3A8A]/90 via-[#1D4ED8]/90 to-[#4338CA]/90 text-white shadow-lg overflow-hidden"
+        style={{
+          backgroundImage: `
+      linear-gradient(rgba(30, 58, 138, 0.9), rgba(29, 78, 216, 0.9)),
+      url('https://upload.wikimedia.org/wikipedia/commons/4/4e/India_Bihar_locator_map.svg')
+    `,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Bihar Map Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div
+            className="bg-center bg-no-repeat opacity-20"
+            style={{
+              backgroundImage: `url(${bg})`,
+              backgroundSize: "contain", // ensures full image fits without cropping
+              width: "100%", // adjust width as needed (e.g. 50%, 70%)
+              height: "100%",
+              mixBlendMode: "screen",
+            }}
+          ></div>
+        </div>
+
+        <div className="relative z-10">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-wide drop-shadow-md">
+            🗳️ नाथ नगर भागलपुर बिहार चुनाव
+          </h2>
+          <p className="mt-3 text-blue-100 text-sm sm:text-base max-w-lg mx-auto">
+            अपने पसंदीदा उम्मीदवार को वोट दें और लोकतंत्र को मज़बूत बनाएं।
+          </p>
+          <div className="mt-5 mx-auto w-24 h-1 bg-[#FACC15] rounded-full"></div>
         </div>
       </section>
-      <main id="parties" className="container mx-auto p-8">
-        {error && <p className="text-center text-red-500">{error}</p>}
-        {/* --- FIX: Added a loading state check --- */}
+
+      {/* Main Content */}
+      <main className="flex-1 container mx-auto px-3 sm:px-6 py-6">
+        {error && (
+          <p className="text-center text-red-500 text-sm mb-4">{error}</p>
+        )}
         {!error && parties.length === 0 && (
-          <p className="text-center text-gray-500">Loading parties...</p>
+          <p className="text-center text-gray-500 text-sm">
+            Loading parties...
+          </p>
         )}
 
-        {parties.length > 0 && (
-          <div className="max-w-2xl mx-auto space-y-4">
-            {parties.map((party) => (
-              <div
-                key={party.id}
-                className="bg-white rounded-lg shadow-md p-4 flex items-center justify-between transition-shadow duration-300 hover:shadow-lg"
-              >
-                <div className="flex items-center">
+        {/* Party Cards */}
+        <div className="flex flex-col gap-5 mt-6">
+          {parties.map((party) => (
+            <div
+              key={party.party_name}
+              className="flex justify-between items-center bg-white rounded-xl shadow-sm border border-gray-200 px-4 sm:px-6 py-4 hover:shadow-lg hover:border-[#3B82F6] transition-all duration-300"
+            >
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-gray-300 bg-white overflow-hidden flex-shrink-0 shadow-sm">
                   <img
                     src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
                       /\\/g,
                       "/"
                     )}`}
-                    alt={`${party.party_name} Logo`}
-                    className="w-16 h-16 object-contain rounded-full border-2 border-gray-200 mr-4 animate-pop-glow"
+                    alt={`${party.party_name} logo`}
+                    className="w-full h-full object-contain"
                   />
-                  <h3 className="text-xl font-bold text-gray-800">
+                </div>
+
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
                     {party.party_name}
                   </h3>
-                </div>
-                <div className="w-32 text-center">
-                  {hasVoted ? (
-                    <div>
-                      <p className="text-sm text-gray-500">Total Votes</p>
-                      <p className="font-bold text-blue-600 text-3xl">
-                        {party.total_votes}
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleVote(party.id)}
-                      className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
-                    >
-                      Vote
-                    </button>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {hasVoted
+                      ? "आपका वोट दर्ज हो चुका है"
+                      : "अपने पसंदीदा पार्टी को वोट दें"}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="text-right">
+                {hasVoted ? (
+                  <div>
+                    <p className="text-xs text-gray-500">कुल वोट</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#1D4ED8] tracking-wide">
+                      {party.total_votes}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleVote(party.id)}
+                    className="bg-gradient-to-r from-[#2563EB] to-[#1E40AF] text-white font-semibold text-sm sm:text-base px-5 sm:px-7 py-2.5 rounded-full shadow-md hover:from-[#1D4ED8] hover:to-[#3730A3] active:scale-95 transition-transform duration-200"
+                  >
+                    वोट दें
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-6 bg-white mt-12">
-        <p className="text-gray-600">
-          &copy; {new Date().getFullYear()} PollPulse. All Rights Reserved.
+      <footer className="bg-[#F9FAFB] text-center py-5 mt-8 border-t border-gray-200">
+        <p className="text-gray-600 text-sm">
+          © {new Date().getFullYear()}{" "}
+          <span className="font-semibold text-[#1E3A8A]">PollPulse</span> · All
+          rights reserved.
         </p>
       </footer>
     </div>

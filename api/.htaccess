@@ -12,5 +12,9 @@ RewriteRule ^parties/update/?$ parties/update.php [NC,L]
 RewriteRule ^parties/delete/([0-9]+)/?$ parties/delete.php?id=$1 [NC,L]
 RewriteRule ^parties/vote/([0-9]+)/?$ parties/vote.php?id=$1 [NC,L]
 
+# Redirect requests for settings
+RewriteRule ^settings/get/?$ settings/get.php [NC,L]
+RewriteRule ^settings/update/?$ settings/update.php [NC,L]
+
 # Serve uploaded files
 RewriteRule ^uploads/(.*)$ uploads/$1 [L]

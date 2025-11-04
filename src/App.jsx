@@ -6,6 +6,7 @@ import HomePage from "./components/HomePage.jsx";
 import Login from "./components/Login.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import BannerManager from "./components/BannerManager";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -41,6 +42,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/admin/banners" element={<BannerManager />} />
     </Routes>
   );
 }
