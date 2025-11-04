@@ -3,16 +3,23 @@ require_once '../config/db.php';
 require_once '../middleware/auth.php';
 verify_token();
 
+// Get new fields from the form
 $party_name = $_POST['party_name'];
+$candidate_name = $_POST['candidate_name']; // New field
 
 // Handle file uploads
 $logo_path = save_file('party_logo');
-$banner_path = save_file('party_banner');
+$candidate_image_path = save_file('candidate_image'); // New file
 
-if ($party_name && $logo_path && $banner_path) {
-    $sql = "INSERT INTO parties (party_name, party_logo, party_banner) VALUES (?, ?, ?)";
+// We removed party_banner and added candidate_name and candidate_image
+if ($party_name && $candidate_name && $logo_path && $candidate_image_path) {
+    
+    // Updated SQL query
+    $sql = "INSERT INTO parties (party_name, party_logo, candidate_name, candidate_image) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sss", $party_name, $logo_path, $banner_path);
+    
+    // Updated bind_param (changed "sss" to "ssss")
+    $stmt->bind_param("ssss", $party_name, $logo_path, $candidate_name, $candidate_image_path);
 
     if ($stmt->execute()) {
         http_response_code(201);
@@ -29,11 +36,14 @@ if ($party_name && $logo_path && $banner_path) {
 
 $conn->close();
 
+// I made a small improvement to this function
 function save_file($file_key) {
     if (isset($_FILES[$file_key])) {
         $file = $_FILES[$file_key];
         $target_dir = "../uploads/";
-        $file_name = "party_" . $file_key . "-" . time() . "." . pathinfo($file["name"], PATHINFO_EXTENSION);
+        
+        // Better file name: uses the key (e.g., "candidate_image") instead of "party_"
+        $file_name = $file_key . "-" . time() . "." . pathinfo($file["name"], PATHINFO_EXTENSION);
         $target_file = $target_dir . $file_name;
 
         if (move_uploaded_file($file["tmp_name"], $target_file)) {

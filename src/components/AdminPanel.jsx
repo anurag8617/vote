@@ -1,7 +1,7 @@
 // import React, { useState, useEffect } from "react";
 // import axios from "axios";
 // import { useNavigate } from "react-router-dom";
-// import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"; // Using the correct library
+// import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // function AdminPanel({ token, onLogout }) {
 //   const navigate = useNavigate();
@@ -35,6 +35,14 @@
 //   const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
 //   const [passwordChangeError, setPasswordChangeError] = useState("");
 
+//   // --- State for Site Settings ---
+//   const [slogan, setSlogan] = useState("");
+//   const [banner1, setBanner1] = useState(null);
+//   const [banner2, setBanner2] = useState(null);
+//   const [banner3, setBanner3] = useState(null);
+//   const [settingsMessage, setSettingsMessage] = useState("");
+//   const [settingsError, setSettingsError] = useState("");
+
 //   // --- Fetch All Parties ---
 //   const fetchParties = async () => {
 //     try {
@@ -42,11 +50,9 @@
 //       const response = await axios.get(
 //         "http://localhost/poll-pulse/api/parties/list"
 //       );
-//       // Ensure the response data is an array before setting the state
 //       if (Array.isArray(response.data)) {
 //         setParties(response.data);
 //       } else {
-//         // If the backend returned an error or unexpected data, treat it as an empty list
 //         setParties([]);
 //         console.error("API did not return an array:", response.data);
 //         setFetchError("Failed to load party data in the correct format.");
@@ -57,8 +63,20 @@
 //     }
 //   };
 
+//   // --- Fetch Site Settings ---
+//   const fetchSettings = async () => {
+//     try {
+//       const response = await axios.get("http://localhost/poll-pulse/api/settings/get");
+//       setSlogan(response.data.slogan);
+//       // We don't set the banner files here, just the slogan
+//     } catch (error) {
+//       console.error("Failed to fetch settings:", error);
+//     }
+//   };
+
 //   useEffect(() => {
 //     fetchParties();
+//     fetchSettings();
 //   }, []);
 
 //   const handleLogoutClick = () => {
@@ -230,6 +248,44 @@
 //     }
 //   };
 
+//   // --- Site Settings Logic ---
+//   const handleSettingsSubmit = async (e) => {
+//     e.preventDefault();
+//     setSettingsMessage("");
+//     setSettingsError("");
+//     setLoading(true);
+
+//     const formData = new FormData();
+//     formData.append("slogan", slogan);
+//     if (banner1) formData.append("banner1", banner1);
+//     if (banner2) formData.append("banner2", banner2);
+//     if (banner3) formData.append("banner3", banner3);
+
+//     try {
+//       await axios.post(
+//         "http://localhost/poll-pulse/api/settings/update",
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       setSettingsMessage("✅ Settings updated successfully!");
+//       // Reset file inputs
+//       setBanner1(null);
+//       setBanner2(null);
+//       setBanner3(null);
+//       e.target.reset();
+//     } catch (err) {
+//       setSettingsError("❌ Failed to update settings.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+
 //   return (
 //     <div className="flex min-h-screen bg-gray-100">
 //       {/* ====== LEFT SIDEBAR ====== */}
@@ -256,6 +312,16 @@
 //               }`}
 //             >
 //               Add New Party
+//             </button>
+//             <button
+//               onClick={() => setActiveView("settings")}
+//               className={`w-full text-left py-2.5 px-4 rounded transition duration-200 font-bold ${
+//                 activeView === "settings"
+//                   ? "bg-blue-50 text-blue-600"
+//                   : "hover:bg-gray-100"
+//               }`}
+//             >
+//               Site Settings
 //             </button>
 //             <button
 //               onClick={() => setActiveView("changePassword")}
@@ -424,7 +490,6 @@
 //                 />
 //               </div>
 
-//               {/* --- Error & Success Messages --- */}
 //               {message && (
 //                 <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
 //                   {message}
@@ -450,13 +515,109 @@
 //             </form>
 //           </div>
 //         )}
+
+//         {/* Site Settings */}
+//         {activeView === "settings" && (
+//           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
+//             <h2 className="text-3xl font-bold mb-6 text-gray-800">
+//               Site Settings
+//             </h2>
+//             <form onSubmit={handleSettingsSubmit} className="space-y-6">
+//               <div>
+//                 <label
+//                   htmlFor="slogan"
+//                   className="block mb-2 font-bold text-gray-700"
+//                 >
+//                   Slogan
+//                 </label>
+//                 <input
+//                   type="text"
+//                   id="slogan"
+//                   value={slogan}
+//                   onChange={(e) => setSlogan(e.target.value)}
+//                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+//                   placeholder="Enter the site slogan"
+//                   required
+//                 />
+//               </div>
+
+//               <div>
+//                 <label
+//                   htmlFor="banner1"
+//                   className="block mb-2 font-bold text-gray-700"
+//                 >
+//                   Upload Banner 1
+//                 </label>
+//                 <input
+//                   type="file"
+//                   id="banner1"
+//                   onChange={(e) => setBanner1(e.target.files[0])}
+//                   className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+//                 />
+//               </div>
+              
+//               <div>
+//                 <label
+//                   htmlFor="banner2"
+//                   className="block mb-2 font-bold text-gray-700"
+//                 >
+//                   Upload Banner 2
+//                 </label>
+//                 <input
+//                   type="file"
+//                   id="banner2"
+//                   onChange={(e) => setBanner2(e.target.files[0])}
+//                   className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+//                 />
+//               </div>
+
+//               <div>
+//                 <label
+//                   htmlFor="banner3"
+//                   className="block mb-2 font-bold text-gray-700"
+//                 >
+//                   Upload Banner 3
+//                 </label>
+//                 <input
+//                   type="file"
+//                   id="banner3"
+//                   onChange={(e) => setBanner3(e.target.files[0])}
+//                   className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+//                 />
+//               </div>
+
+//               {settingsMessage && (
+//                 <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
+//                   {settingsMessage}
+//                 </div>
+//               )}
+//               {settingsError && (
+//                 <div className="text-red-600 text-sm font-medium text-center bg-red-100 p-3 rounded-lg">
+//                   {settingsError}
+//                 </div>
+//               )}
+
+//               <button
+//                 type="submit"
+//                 disabled={loading}
+//                 className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 ${
+//                   loading
+//                     ? "bg-blue-300 cursor-not-allowed"
+//                     : "bg-blue-600 hover:bg-blue-700"
+//                 }`}
+//               >
+//                 {loading ? "Updating Settings..." : "Update Settings"}
+//               </button>
+//             </form>
+//           </div>
+//         )}
+
 //         {activeView === "changePassword" && (
 //           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
 //             <h2 className="text-3xl font-bold mb-6 text-gray-800">
 //               Change Admin Password
 //             </h2>
 //             <form onSubmit={handleChangePassword} className="space-y-6">
-//               {/* Change Password Form Fields */}
 //               <div>
 //                 <label
 //                   htmlFor="currentPassword"
@@ -511,7 +672,6 @@
 //                 />
 //               </div>
 
-//               {/* --- Error & Success Messages --- */}
 //               {passwordChangeMessage && (
 //                 <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
 //                   {passwordChangeMessage}
@@ -535,13 +695,11 @@
 //       </main>
 
 //       {/* ====== MODALS ====== */}
-//       {/* Edit Modal */}
 //       {isEditModalOpen && (
 //         <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
 //           <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md">
 //             <h3 className="text-xl font-bold mb-4">Edit Party</h3>
 //             <form onSubmit={handleUpdateParty} className="space-y-4">
-//               {/* Edit Form Fields */}
 //               <div>
 //                 <label
 //                   htmlFor="editPartyName"
@@ -628,7 +786,6 @@
 //         </div>
 //       )}
 
-//       {/* Delete Confirmation Modal */}
 //       {isDeleteModalOpen && (
 //         <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
 //           <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md text-center">
@@ -662,7 +819,6 @@
 // export default AdminPanel;
 
 
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -675,7 +831,8 @@ function AdminPanel({ token, onLogout }) {
   // --- State for Add Form ---
   const [partyName, setPartyName] = useState("");
   const [partyLogo, setPartyLogo] = useState(null);
-  const [partyBanner, setPartyBanner] = useState(null);
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateImage, setCandidateImage] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -690,8 +847,9 @@ function AdminPanel({ token, onLogout }) {
   const [currentParty, setCurrentParty] = useState(null);
   const [editedPartyName, setEditedPartyName] = useState("");
   const [editedPartyLogo, setEditedPartyLogo] = useState(null);
-  const [editedPartyBanner, setEditedPartyBanner] = useState(null);
-  const [editedTotalVotes, setEditedTotalVotes] = useState(0);
+  const [editedTotalVotes, setEditedTotalVotes] = useState(0); // --- RE-ADDED ---
+  const [editedCandidateName, setEditedCandidateName] = useState("");
+  const [editedCandidateImage, setEditedCandidateImage] = useState(null);
 
   // --- State for Change Password ---
   const [currentPassword, setCurrentPassword] = useState("");
@@ -731,9 +889,10 @@ function AdminPanel({ token, onLogout }) {
   // --- Fetch Site Settings ---
   const fetchSettings = async () => {
     try {
-      const response = await axios.get("http://localhost/poll-pulse/api/settings/get");
+      const response = await axios.get(
+        "http://localhost/poll-pulse/api/settings/get"
+      );
       setSlogan(response.data.slogan);
-      // We don't set the banner files here, just the slogan
     } catch (error) {
       console.error("Failed to fetch settings:", error);
     }
@@ -786,7 +945,8 @@ function AdminPanel({ token, onLogout }) {
     const formData = new FormData();
     formData.append("party_name", partyName);
     formData.append("party_logo", partyLogo);
-    formData.append("party_banner", partyBanner);
+    formData.append("candidate_name", candidateName);
+    formData.append("candidate_image", candidateImage);
 
     try {
       await axios.post(
@@ -802,7 +962,8 @@ function AdminPanel({ token, onLogout }) {
       setMessage("✅ Party added successfully!");
       setPartyName("");
       setPartyLogo(null);
-      setPartyBanner(null);
+      setCandidateName("");
+      setCandidateImage(null);
       e.target.reset();
       await fetchParties();
       setActiveView("view");
@@ -817,7 +978,8 @@ function AdminPanel({ token, onLogout }) {
   const openEditModal = (party) => {
     setCurrentParty(party);
     setEditedPartyName(party.party_name);
-    setEditedTotalVotes(party.total_votes);
+    setEditedTotalVotes(party.total_votes); // --- RE-ADDED ---
+    setEditedCandidateName(party.candidate_name);
     setIsEditModalOpen(true);
   };
 
@@ -832,7 +994,9 @@ function AdminPanel({ token, onLogout }) {
     setCurrentParty(null);
     setEditedPartyName("");
     setEditedPartyLogo(null);
-    setEditedPartyBanner(null);
+    setEditedCandidateName("");
+    setEditedCandidateImage(null);
+    setEditedTotalVotes(0); // --- RE-ADDED ---
   };
 
   // --- Update Party Logic ---
@@ -843,16 +1007,17 @@ function AdminPanel({ token, onLogout }) {
     const formData = new FormData();
     formData.append("id", currentParty.id);
     formData.append("party_name", editedPartyName);
-    formData.append("total_votes", editedTotalVotes);
+    formData.append("total_votes", editedTotalVotes); // --- RE-ADDED ---
     if (editedPartyLogo) {
       formData.append("party_logo", editedPartyLogo);
     }
-    if (editedPartyBanner) {
-      formData.append("party_banner", editedPartyBanner);
+    formData.append("candidate_name", editedCandidateName);
+    if (editedCandidateImage) {
+      formData.append("candidate_image", editedCandidateImage);
     }
 
     try {
-      await axios.post(
+      const response = await axios.post(
         `http://localhost/poll-pulse/api/parties/update`,
         formData,
         {
@@ -865,7 +1030,15 @@ function AdminPanel({ token, onLogout }) {
       await fetchParties();
       closeModals();
     } catch (err) {
-      console.error("Failed to update party:", err);
+      // --- CHANGED ---
+      // Display the error message from the backend (e.g., "Cannot set votes lower than real votes")
+      if (err.response && err.response.data && err.response.data.message) {
+        alert("Error: " + err.response.data.message);
+      } else {
+        console.error("Failed to update party:", err);
+        alert("An unknown error occurred while updating.");
+      }
+      // --- END CHANGE ---
     }
   };
 
@@ -938,7 +1111,6 @@ function AdminPanel({ token, onLogout }) {
         }
       );
       setSettingsMessage("✅ Settings updated successfully!");
-      // Reset file inputs
       setBanner1(null);
       setBanner2(null);
       setBanner3(null);
@@ -949,7 +1121,6 @@ function AdminPanel({ token, onLogout }) {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -1060,12 +1231,23 @@ function AdminPanel({ token, onLogout }) {
                                   "/"
                                 )}`}
                                 alt={`${party.party_name} Logo`}
-                                className="w-12 h-12 object-contain rounded-full border-2 mr-4"
+                                className="w-12 h-12 object-contain rounded-full border-2 mr-2"
+                              />
+                              <img
+                                src={`http://localhost/poll-pulse/api/${party.candidate_image.replace(
+                                  /\\/g,
+                                  "/"
+                                )}`}
+                                alt={`${party.candidate_name} Photo`}
+                                className="w-12 h-12 object-cover rounded-full border-2 mr-4"
                               />
                               <div>
                                 <h3 className="text-lg font-bold text-gray-800">
                                   {party.party_name}
                                 </h3>
+                                <p className="text-md text-gray-600">
+                                  {party.candidate_name}
+                                </p>
                                 <p className="text-sm text-gray-500">
                                   Votes:{" "}
                                   <span className="font-bold text-blue-600">
@@ -1099,6 +1281,7 @@ function AdminPanel({ token, onLogout }) {
             </DragDropContext>
           </div>
         )}
+        {/* Add Party */}
         {activeView === "add" && (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">
@@ -1138,23 +1321,39 @@ function AdminPanel({ token, onLogout }) {
                   required
                 />
               </div>
-
               <div>
                 <label
-                  htmlFor="partyBanner"
+                  htmlFor="candidateName"
                   className="block mb-2 font-bold text-gray-700"
                 >
-                  Upload Party Banner
+                  Candidate Name
                 </label>
                 <input
-                  type="file"
-                  id="partyBanner"
-                  onChange={(e) => setPartyBanner(e.target.files[0])}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  type="text"
+                  id="candidateName"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  placeholder="Enter the candidate's name"
                   required
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="candidateImage"
+                  className="block mb-2 font-bold text-gray-700"
+                >
+                  Upload Candidate Image
+                </label>
+                <input
+                  type="file"
+                  id="candidateImage"
+                  onChange={(e) => setCandidateImage(e.target.files[0])}
+                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  required
+                />
+              </div>
               {message && (
                 <div className="text-green-600 text-sm font-medium text-center bg-green-100 p-3 rounded-lg">
                   {message}
@@ -1165,7 +1364,6 @@ function AdminPanel({ token, onLogout }) {
                   {error}
                 </div>
               )}
-
               <button
                 type="submit"
                 disabled={loading}
@@ -1220,7 +1418,7 @@ function AdminPanel({ token, onLogout }) {
                   className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
-              
+
               <div>
                 <label
                   htmlFor="banner2"
@@ -1277,6 +1475,7 @@ function AdminPanel({ token, onLogout }) {
           </div>
         )}
 
+        {/* Change Password */}
         {activeView === "changePassword" && (
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">
@@ -1360,6 +1559,7 @@ function AdminPanel({ token, onLogout }) {
       </main>
 
       {/* ====== MODALS ====== */}
+      {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md">
@@ -1382,6 +1582,7 @@ function AdminPanel({ token, onLogout }) {
                 />
               </div>
 
+              {/* --- CHANGED --- (RE-ENABLED INPUT) */}
               <div>
                 <label
                   htmlFor="editTotalVotes"
@@ -1400,6 +1601,7 @@ function AdminPanel({ token, onLogout }) {
                   required
                 />
               </div>
+              {/* --- END CHANGE --- */}
 
               <div>
                 <label
@@ -1418,15 +1620,32 @@ function AdminPanel({ token, onLogout }) {
 
               <div>
                 <label
-                  htmlFor="editPartyBanner"
+                  htmlFor="editCandidateName"
                   className="block mb-2 font-bold text-gray-700"
                 >
-                  Upload New Banner (Optional)
+                  Candidate Name
+                </label>
+                <input
+                  type="text"
+                  id="editCandidateName"
+                  value={editedCandidateName}
+                  onChange={(e) => setEditedCandidateName(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="editCandidateImage"
+                  className="block mb-2 font-bold text-gray-700"
+                >
+                  Upload New Candidate Image (Optional)
                 </label>
                 <input
                   type="file"
-                  id="editPartyBanner"
-                  onChange={(e) => setEditedPartyBanner(e.target.files[0])}
+                  id="editCandidateImage"
+                  onChange={(e) => setEditedCandidateImage(e.target.files[0])}
                   className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
@@ -1451,6 +1670,7 @@ function AdminPanel({ token, onLogout }) {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-gray-200 p-6 rounded-lg shadow-xl w-full max-w-md text-center">

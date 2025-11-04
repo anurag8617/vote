@@ -1,8 +1,12 @@
 <?php
 require_once '../config/db.php';
 
-// Fetch parties sorted by the display_order column, then by creation date
-$sql = "SELECT id, party_name, party_logo, party_banner, total_votes, display_order FROM parties ORDER BY display_order ASC, created_at DESC";
+// Fetch parties with new fields and remove banner
+// We select candidate_name and candidate_image, and party_banner is removed.
+$sql = "SELECT id, party_name, party_logo, total_votes, display_order, candidate_name, candidate_image 
+        FROM parties 
+        ORDER BY display_order ASC, created_at DESC";
+
 $result = $conn->query($sql);
 
 $parties = [];

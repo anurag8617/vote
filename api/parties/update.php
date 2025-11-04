@@ -3,128 +3,134 @@ require_once '../config/db.php';
 require_once '../middleware/auth.php';
 verify_token();
 
-// --- Helper Functions to Generate Fake Data ---
-
-/**
- * Generates a random, plausible IPv4 address.
- * @return string A fake IP address.
- */
-function generate_fake_ip() {
-    // Generates a random IP address in the format X.X.X.X
-    return rand(1, 255) . "." . rand(0, 255) . "." . rand(0, 255) . "." . rand(1, 254);
-}
-
-/**
- * Returns a random, common user agent string from a predefined list.
- * @return string A fake user agent string.
- */
-function get_fake_user_agent() {
-    $user_agents = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1',
-        'Mozilla/5.0 (Linux; Android 10; SM-G996U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Mobile Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
-    ];
-    // Return a random element from the array
-    return $user_agents[array_rand($user_agents)];
-}
-
-
-// --- Main Logic ---
-
-$id = $_POST['id'];
-$party_name = $_POST['party_name'];
-$new_total_votes = (int)$_POST['total_votes'];
-
-// Get the current vote count
-$sql_get_party = "SELECT total_votes, party_logo, party_banner FROM parties WHERE id = ?";
-$stmt_get_party = $conn->prepare($sql_get_party);
-$stmt_get_party->bind_param("i", $id);
-$stmt_get_party->execute();
-$result = $stmt_get_party->get_result();
-$party = $result->fetch_assoc();
-$current_total_votes = (int)$party['total_votes'];
-$stmt_get_party->close();
-
-$vote_difference = $new_total_votes - $current_total_votes;
-
-$conn->begin_transaction();
-
-try {
-    if ($vote_difference > 0) {
-        // Votes were ADDED, so insert fake voter records
-        $sql_add_voters = "INSERT INTO voters (party_id, ip_address, user_agent) VALUES (?, ?, ?)";
-        $stmt_add_voters = $conn->prepare($sql_add_voters);
-        
-        for ($i = 0; $i < $vote_difference; $i++) {
-            // Generate unique, realistic fake data for each new voter
-            $fake_ip = generate_fake_ip();
-            $fake_user_agent = get_fake_user_agent();
-            
-            $stmt_add_voters->bind_param("iss", $id, $fake_ip, $fake_user_agent);
-            $stmt_add_voters->execute();
-        }
-        $stmt_add_voters->close();
-
-    } elseif ($vote_difference < 0) {
-        // Votes were REMOVED, so delete voter records
-        $votes_to_remove = abs($vote_difference);
-        $sql_delete_votes = "DELETE FROM voters WHERE party_id = ? ORDER BY voted_at DESC LIMIT ?";
-        $stmt_delete_votes = $conn->prepare($sql_delete_votes);
-        $stmt_delete_votes->bind_param("ii", $id, $votes_to_remove);
-        $stmt_delete_votes->execute();
-        $stmt_delete_votes->close();
-    }
-
-    // Handle file uploads (remains the same)
-    $logo_path = $party['party_logo'];
-    if (isset($_FILES['party_logo'])) {
-        if (file_exists("../" . $logo_path)) unlink("../" . $logo_path);
-        $logo_path = save_file('party_logo');
-    }
-    $banner_path = $party['party_banner'];
-    if (isset($_FILES['party_banner'])) {
-        if (file_exists("../" . $banner_path)) unlink("../" . $banner_path);
-        $banner_path = save_file('party_banner');
-    }
-
-    // Update the party table (remains the same)
-    $sql_update_party = "UPDATE parties SET party_name = ?, total_votes = ?, party_logo = ?, party_banner = ? WHERE id = ?";
-    $stmt_update_party = $conn->prepare($sql_update_party);
-    $stmt_update_party->bind_param("sisss", $party_name, $new_total_votes, $logo_path, $banner_path, $id);
-
-    if ($stmt_update_party->execute()) {
-        $conn->commit();
-        http_response_code(200);
-        echo json_encode(["message" => "Party updated successfully!"]);
-    } else {
-        $conn->rollback();
-        http_response_code(500);
-        echo json_encode(["message" => "Failed to update party."]);
-    }
-    $stmt_update_party->close();
-
-} catch (Exception $e) {
-    $conn->rollback();
-    http_response_code(500);
-    echo json_encode(["message" => "An error occurred: " . $e->getMessage()]);
-}
-
-$conn->close();
-
+// --- File saving function ---
 function save_file($file_key) {
-    if (isset($_FILES[$file_key])) {
+    if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] == 0) {
         $file = $_FILES[$file_key];
         $target_dir = "../uploads/";
-        $file_name = "party_" . $file_key . "-" . time() . "." . pathinfo($file["name"], PATHINFO_EXTENSION);
+        $file_name = $file_key . "-" . time() . "." . pathinfo($file["name"], PATHINFO_EXTENSION);
         $target_file = $target_dir . $file_name;
+
         if (move_uploaded_file($file["tmp_name"], $target_file)) {
             return "uploads/" . $file_name;
         }
     }
-    return null;
+    return null; 
 }
+
+// --- Get all data from POST ---
+$id = $_POST['id'];
+$party_name = $_POST['party_name'];
+$candidate_name = $_POST['candidate_name']; 
+$new_total_votes = (int)$_POST['total_votes']; // The new vote count from admin
+
+// Basic validation
+if (!$id || !$party_name || !$candidate_name || !isset($new_total_votes)) {
+    http_response_code(400);
+    echo json_encode(["message" => "Missing required fields."]);
+    exit();
+}
+
+// --- Start a Transaction ---
+$conn->begin_transaction();
+
+try {
+    // 1. --- SAFETY CHECK (UPDATED) ---
+    // Count how many *REAL* user votes exist (IP does NOT start with 'admin_added_')
+    $sql_real_votes = "SELECT COUNT(*) as real_votes FROM voters WHERE party_id = ? AND ip_address NOT LIKE 'admin_added_%'";
+    $stmt_real = $conn->prepare($sql_real_votes);
+    $stmt_real->bind_param("i", $id);
+    $stmt_real->execute();
+    $real_votes_count = $stmt_real->get_result()->fetch_assoc()['real_votes'];
+    $stmt_real->close();
+
+    // If admin tries to set vote count *lower* than real votes, STOP.
+    if ($new_total_votes < $real_votes_count) {
+        $conn->rollback(); // Cancel the transaction
+        http_response_code(400); // Bad Request
+        echo json_encode(["message" => "Error: Cannot set total votes ($new_total_votes) lower than the number of real user votes ($real_votes_count)."]);
+        exit();
+    }
+
+    // 2. --- SYNCHRONIZE VOTERS TABLE ---
+    // Get the *current* total votes (real + fake) from the voters table
+    $sql_current_votes = "SELECT COUNT(*) as current_total_votes FROM voters WHERE party_id = ?";
+    $stmt_current = $conn->prepare($sql_current_votes);
+    $stmt_current->bind_param("i", $id);
+    $stmt_current->execute();
+    $current_total_votes = $stmt_current->get_result()->fetch_assoc()['current_total_votes'];
+    $stmt_current->close();
+
+    $difference = $new_total_votes - $current_total_votes;
+
+    if ($difference > 0) {
+        // --- ADD FAKE VOTES (UPDATED) ---
+        // We will add $difference new rows, each with a unique IP
+        $sql_add_vote = "INSERT INTO voters (party_id, ip_address, user_agent) VALUES (?, ?, 'admin_added')";
+        $stmt_add = $conn->prepare($sql_add_vote);
+        for ($i = 0; $i < $difference; $i++) {
+            // Create a unique IP address for this "fake" vote
+            $unique_admin_ip = 'admin_added_' . uniqid(); 
+            $stmt_add->bind_param("is", $id, $unique_admin_ip);
+            $stmt_add->execute();
+        }
+        $stmt_add->close();
+
+    } elseif ($difference < 0) {
+        // --- REMOVE FAKE VOTES (UPDATED) ---
+        // We will remove $difference rows, only from the "admin_added" pool
+        $votes_to_remove = abs($difference);
+        $sql_remove_vote = "DELETE FROM voters WHERE party_id = ? AND ip_address LIKE 'admin_added_%' LIMIT ?";
+        $stmt_remove = $conn->prepare($sql_remove_vote);
+        $stmt_remove->bind_param("ii", $id, $votes_to_remove);
+        $stmt_remove->execute();
+        $stmt_remove->close();
+    }
+    // If $difference == 0, do nothing.
+
+    // 3. --- UPDATE THE PARTIES TABLE ---
+    // This query is the same as before
+    $sql_update_party = "UPDATE parties SET party_name = ?, candidate_name = ?, total_votes = ?";
+    $types = "ssi"; // s = string, i = integer
+    $params = [$party_name, $candidate_name, $new_total_votes];
+
+    // Check for new logo
+    $logo_path = save_file('party_logo');
+    if ($logo_path) {
+        $sql_update_party .= ", party_logo = ?";
+        $types .= "s";
+        $params[] = $logo_path;
+    }
+
+    // Check for new candidate image
+    $candidate_image_path = save_file('candidate_image');
+    if ($candidate_image_path) {
+        $sql_update_party .= ", candidate_image = ?";
+        $types .= "s";
+        $params[] = $candidate_image_path;
+    }
+
+    $sql_update_party .= " WHERE id = ?";
+    $types .= "i";
+    $params[] = $id;
+
+    // Prepare and execute the final update
+    $stmt_update = $conn->prepare($sql_update_party);
+    $stmt_update->bind_param($types, ...$params);
+    $stmt_update->execute();
+    $stmt_update->close();
+
+    // If everything worked, commit the changes
+    $conn->commit();
+    http_response_code(200);
+    echo json_encode(["message" => "Party updated and votes synchronized successfully!"]);
+
+} catch (mysqli_sql_exception $exception) {
+    // If any step failed, roll back all changes
+    $conn->rollback();
+    http_response_code(500);
+    echo json_encode(["message" => "Database error occurred.", "error" => $exception->getMessage()]);
+}
+
+$conn->close();
 ?>
