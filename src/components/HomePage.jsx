@@ -75,7 +75,7 @@ function HomePage() {
 
       {/* Title Section */}
       <section
-        className="relative py-10 text-center bg-gradient-to-r from-[#1E3A8A]/90 via-[#1D4ED8]/90 to-[#4338CA]/90 text-white shadow-lg overflow-hidden"
+        className="relative py-10 text-center text-white shadow-lg overflow-hidden"
         style={{
           backgroundImage: `
       linear-gradient(rgba(30, 58, 138, 0.9), rgba(29, 78, 216, 0.9)),
@@ -83,30 +83,32 @@ function HomePage() {
     `,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
       >
         {/* Bihar Map Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="bg-center bg-no-repeat opacity-20"
-            style={{
-              backgroundImage: `url(${bg})`,
-              backgroundSize: "contain", // ensures full image fits without cropping
-              width: "100%", // adjust width as needed (e.g. 50%, 70%)
-              height: "100%",
-              mixBlendMode: "screen",
-            }}
-          ></div>
-        </div>
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{
+            backgroundImage: `url(${bg})`,
+            backgroundSize: "cover", // fills entire section
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            width: "100%",
+            height: "100%",
+            opacity: 0.25,
+            mixBlendMode: "screen",
+          }}
+        ></div>
 
-        <div className="relative z-10">
+        <div className="relative z-10 px-4">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-wide drop-shadow-md">
             🗳️ नाथ नगर भागलपुर बिहार चुनाव
           </h2>
           <p className="mt-3 text-blue-100 text-sm sm:text-base max-w-lg mx-auto">
             अपने पसंदीदा उम्मीदवार को वोट दें और लोकतंत्र को मज़बूत बनाएं।
           </p>
-          <div className="mt-5 mx-auto w-24 h-1 bg-[#FACC15] rounded-full"></div>
+          <div className="mt-5 mx-auto w-24 h-1  rounded-full"></div>
         </div>
       </section>
 
@@ -175,12 +177,32 @@ function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#F9FAFB] text-center py-5 mt-8 border-t border-gray-200">
-        <p className="text-gray-600 text-sm">
-          © {new Date().getFullYear()}{" "}
-          <span className="font-semibold text-[#1E3A8A]">PollPulse</span> · All
-          rights reserved.
-        </p>
+      {/* Footer (Mobile Responsive) */}
+      <footer
+        className="relative text-center py-6 mt-8 text-white sm:py-10"
+        style={{
+          backgroundImage: `
+      linear-gradient(rgba(30, 58, 138, 0.85), rgba(30, 58, 138, 0.85)),
+      url('https://thecsrjournal.in/wp-content/uploads/2025/06/Bihar-Election.webp')
+    `,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="max-w-xs mx-auto px-4">
+          <button
+            className=" bg-white/60 text-[#1E3A8A] font-semibold px-4 py-2 rounded-full shadow-md hover:bg-white active:scale-95 transition-transform duration-300"
+            onClick={() => (window.location.href = "/contact")}
+          >
+            हमसे जुड़ें
+          </button>
+
+          <p className="text-xs sm:text-sm text-gray-200 mt-4 leading-relaxed">
+            © {new Date().getFullYear()}{" "}
+            <span className="font-semibold text-white">PollPulse</span> · All
+            rights reserved.
+          </p>
+        </div>
       </footer>
     </div>
   );

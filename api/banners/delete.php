@@ -2,6 +2,7 @@
 require_once '../config/db.php';
 require_once '../middleware/auth.php';
 
+
 authenticate(); // Protect this endpoint
 
 header('Content-Type: application/json');
