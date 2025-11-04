@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import bg from "../assets/bg.png";
-import { FaArrowLeft } from "react-icons/fa";
 
 function HomePage() {
   const [parties, setParties] = useState([]);
@@ -128,12 +127,7 @@ function HomePage() {
       </section>
 
       {/* Main Content */}
-      <main
-        className="flex-1 container mx-auto px-3 sm:px-6 py-6"
-        style={{
-          borderRadius: "20px 20px 0 0",
-        }}
-      >
+      <main className="flex-1 container mx-auto px-3 sm:px-6 py-6">
         {error && (
           <p className="text-center text-red-500 text-sm mb-4">{error}</p>
         )}
@@ -144,62 +138,72 @@ function HomePage() {
         )}
 
         {/* Party Cards */}
-        <div className="grid gap-6 m-4 mt-6 ">
+        <div className="flex flex-col gap-5 mt-6">
           {parties.map((party) => (
             <div
-              key={party.id}
-              className="relative bg-white rounded-xl shadow-md border border-gray-200 mb-12 hover:shadow-lg transition-all duration-300"
-              style={{
-                borderRadius: "20px 20px 0 20px",
-              }}
+              key={party.party_name}
+              className="flex justify-between items-center bg-white rounded-xl shadow-sm border border-gray-200 px-4 sm:px-6 py-4 hover:shadow-lg hover:border-[#3B82F6] transition-all duration-300"
             >
-              {/* Candidate Image */}
-              <img
-                src={`http://localhost/poll-pulse/api/${party.candidate_image.replace(
-                  /\\/g,
-                  "/"
-                )}`}
-                alt={party.candidate_name}
-                className="w-full h-56 object-cover"
-                style={{
-                  borderRadius: "20px 20px 0 0",
-                }}
-              />
+              <div className="flex items-center gap-4 sm:gap-6">
+                <div className="flex-shrink-0 flex -space-x-4">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white bg-white overflow-hidden shadow-sm z-10">
+                    <img
+                      src={`http://localhost/poll-pulse/api/${party.candidate_image.replace(
+                        /\\/g,
+                        "/"
+                      )}`}
+                      alt={`${party.party_name} logo`}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  {/* Added Candidate Image */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-white bg-gray-200 overflow-hidden shadow-sm">
+                    <img
+                      src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
+                        /\\/g,
+                        "/"
+                      )}`}
+                      alt={`${party.candidate_name} photo`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
 
-              {/* Party Logo - overlapping half inside and half outside */}
-              <div className="absolute  left-4 w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-white glow-float">
-                <img
-                  onClick={() => handleVote(party.id)}
-                  src={`http://localhost/poll-pulse/api/${party.party_logo.replace(
-                    /\\/g,
-                    "/"
-                  )}`}
-                  alt={party.party_name}
-                  className="w-full h-full object-contain "
-                />
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
+                    {party.candidate_name}
+                  </h3>
+                  {/* Added Candidate Name */}
+                  <p className="text-sm sm:text-md font-medium text-gray-600">
+                    {party.party_name}
+                  </p>
+                  {/* --- CHANGED --- */}
+                  <p className="text-xs text-gray-500 mt-1">
+                    {hasVoted
+                      ? String(party.id) === String(votedPartyId) // Check if this is the voted party
+                        ? "आपका वोट दर्ज हो चुका है"
+                        : "" // Show nothing on other cards
+                      : "अपने पसंदीदा पार्टी को वोट दें"}
+                  </p>
+                  {/* --- END CHANGE --- */}
+                </div>
               </div>
 
-              {/* Bottom Bar */}
-              <div
-                className="flex justify-end items-center px-5 py-2 "
-                style={{
-                  backgroundColor: "#1e3a8a",
-                  borderRadius: "0 0 0 20px",
-                }}
-              >
+              <div className="text-right">
                 {hasVoted ? (
-                  <div className="text-right flex items-center">
-                    <p className="text-xl text-gray-100 mr-2">Votes:</p>
-                    <p className="text-2xl font-bold text-gray-100">
+                  <div>
+                    <p className="text-xs text-gray-500">कुल वोट</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold text-[#1D4ED8] tracking-wide">
                       {party.total_votes}
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <p className="text-xl text-gray-100 mr-2 flex items-center gap-2 arrow-bounce ">
-                      <FaArrowLeft /> Click To Vote
-                    </p>
-                  </>
+                  <button
+                    onClick={() => handleVote(party.id)}
+                    className="bg-gradient-to-r from-[#2563EB] to-[#1E40AF] text-white font-semibold text-sm sm:text-base px-5 sm:px-7 py-2.5 rounded-full shadow-md hover:from-[#1D4ED8] hover:to-[#3730A3] active:scale-95 transition-transform duration-200"
+                  >
+                    वोट दें
+                  </button>
                 )}
               </div>
             </div>
