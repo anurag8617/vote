@@ -148,7 +148,7 @@ function HomePage() {
           {parties.map((party) => (
             <div
               key={party.id}
-              className="cursor-pointer relative bg-white rounded-xl shadow-md border border-gray-200 mb-12 hover:shadow-lg transition-all duration-300"
+              className="relative bg-white rounded-xl shadow-md border border-gray-200 mb-12 hover:shadow-lg transition-all duration-300"
               style={{
                 borderRadius: "20px 20px 0 20px",
               }}
@@ -216,7 +216,7 @@ function HomePage() {
             alert("Link copied to clipboard!");
           }
         }}
-        className="cursor-pointer fixed bottom-6 right-6 bg-[#157e00] hover:bg-[#ff9100] text-white rounded-full shadow-lg p-4 flex items-center justify-center transition-transform transform hover:scale-110 z-50 animate-shine-float"
+        className="fixed bottom-6 right-6 bg-[#157e00] hover:bg-[#ff9100] text-white rounded-full shadow-lg p-4 flex items-center justify-center transition-transform transform hover:scale-110 z-50 animate-shine-float"
       >
         <img
           src={share}
@@ -238,7 +238,7 @@ function HomePage() {
           backgroundPosition: "center",
         }}
       >
-        <div className=" max-w-xs mx-auto px-4">
+        <div className="max-w-xs mx-auto px-4">
           <button
             className=" bg-white/60 text-[#1E3A8A] font-semibold px-4 py-2 rounded-full shadow-md hover:bg-white active:scale-95 transition-transform duration-300"
             onClick={() => (window.location.href = "/contact")}

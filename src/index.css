@@ -44,3 +44,57 @@
 .arrow-bounce {
   animation: bounceLeft 1.2s ease-in-out infinite;
 }
+
+
+@keyframes shineFloat {
+  0% {
+    box-shadow: 0 0 8px rgba(30, 58, 138, 0.6),
+                0 0 16px rgba(30, 58, 138, 0.4);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(30, 58, 138, 0.9),
+                0 0 30px rgba(30, 58, 138, 0.7);
+    transform: translateY(-6px);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(30, 58, 138, 0.6),
+                0 0 16px rgba(30, 58, 138, 0.4);
+    transform: translateY(0);
+  }
+}
+
+.animate-shine-float {
+  animation: shineFloat 2.5s ease-in-out infinite;
+}
+
+
+
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0px rgba(37, 99, 235, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(37, 99, 235, 0.9);
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(37, 99, 235, 0.7);
+    transform: scale(1);
+  }
+}
+
+@keyframes gentleBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.attractive-button {
+  animation: pulseGlow 1.8s infinite ease-in-out, gentleBounce 2.5s infinite ease-in-out;
+}

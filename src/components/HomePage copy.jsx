@@ -211,6 +211,31 @@ function HomePage() {
         </div>
       </main>
 
+      {/* Floating Share Button */}
+      <button
+        onClick={() => {
+          const shareData = {
+            title: "PollPulse",
+            text: "Check out this voting poll for Nath Nagar Bhagalpur Bihar Election!",
+            url: window.location.href,
+          };
+
+          if (navigator.share) {
+            navigator.share(shareData).catch(console.error);
+          } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Link copied to clipboard!");
+          }
+        }}
+        className="fixed bottom-6 right-6 bg-[#157e00] hover:bg-[#ff9100] text-white rounded-full shadow-lg p-4 flex items-center justify-center transition-transform transform hover:scale-110 z-50 animate-shine-float"
+      >
+        <img
+          src={share}
+          alt="Share"
+          className="w-10 h-10 filter brightness-0 invert"
+        />
+      </button>
+
       {/* Footer */}
       {/* Footer (Mobile Responsive) */}
       <footer
